@@ -1,55 +1,46 @@
 import pickle
 import streamlit as st
 import requests
-from streamlit.components.v1 import html  # To embed HTML
 
 def fetch_poster(movie_id):
-    url = "https://api.themoviedb.org/3/movie/{}?api_key=8265bd1679663a7ea12ac168da84d2e8&language=en-US".format(movie_id)
-    data = requests.get(url)
-    data = data.json()
+    url = f"https://api.themoviedb.org/3/movie/{movie_id}?api_key=8265bd1679663a7ea12ac168da84d2e8&language=en-US"
+    data = requests.get(url).json()
     poster_path = data['poster_path']
-    full_path = "https://image.tmdb.org/t/p/w500/" + poster_path
+    full_path = f"https://image.tmdb.org/t/p/w500/{poster_path}"
     return full_path
 
 def recommend(movie):
     index = movies[movies['title'] == movie].index[0]
     distances = sorted(list(enumerate(similarity[index])), reverse=True, key=lambda x: x[1])
+    
     recommended_movie_names = []
     recommended_movie_posters = []
-    for i in distances[1:6]:
-        # fetch the movie poster
+    
+    for i in distances[1:6]:  # Top 5 recommendations
         movie_id = movies.iloc[i[0]].movie_id
         recommended_movie_posters.append(fetch_poster(movie_id))
         recommended_movie_names.append(movies.iloc[i[0]].title)
-
+    
     return recommended_movie_names, recommended_movie_posters
 
-st.header('Movie Recommender System')
+
+# Load models
 movies = pickle.load(open('model/movie_list.pkl', 'rb'))
 similarity = pickle.load(open('model/similarity.pkl', 'rb'))
 
+# Streamlit app interface
+st.title('Movie Recommender System')
+
 movie_list = movies['title'].values
-selected_movie = st.selectbox(
-    "Type or select a movie from the dropdown",
-    movie_list
-)
+selected_movie = st.selectbox("Type or select a movie from the dropdown", movie_list)
 
 if st.button('Show Recommendation'):
     recommended_movie_names, recommended_movie_posters = recommend(selected_movie)
     
-    # Creating the HTML content to display movie posters and titles
-    movie_html = """
-    <div class="movie-container">
-    """
-    for i in range(5):
-        movie_html += f"""
-        <div class="movie">
-            <img src="{recommended_movie_posters[i]}" alt="{recommended_movie_names[i]}">
-            <div class="movie-title">{recommended_movie_names[i]}</div>
-        </div>
-        """
+    # Using Streamlit columns for a responsive grid layout
+    cols = st.columns(5)  # Create 5 columns
     
-    movie_html += "</div>"
-
-    # Display HTML in Streamlit
-    st.markdown(movie_html, unsafe_allow_html=True)
+    for i in range(5):
+        with cols[i]:
+            st.text(recommended_movie_names[i])  # Movie name
+            st.image(recommended_movie_posters[i])  # Movie poster
