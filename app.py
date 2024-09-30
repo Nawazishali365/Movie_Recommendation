@@ -1,6 +1,7 @@
 import pickle
 import streamlit as st
 import requests
+from streamlit.components.v1 import html  # To embed HTML
 
 def fetch_poster(movie_id):
     url = "https://api.themoviedb.org/3/movie/{}?api_key=8265bd1679663a7ea12ac168da84d2e8&language=en-US".format(movie_id)
@@ -21,12 +22,11 @@ def recommend(movie):
         recommended_movie_posters.append(fetch_poster(movie_id))
         recommended_movie_names.append(movies.iloc[i[0]].title)
 
-    return recommended_movie_names,recommended_movie_posters
-
+    return recommended_movie_names, recommended_movie_posters
 
 st.header('Movie Recommender System')
-movies = pickle.load(open('model/movie_list.pkl','rb'))
-similarity = pickle.load(open('model/similarity.pkl','rb'))
+movies = pickle.load(open('model/movie_list.pkl', 'rb'))
+similarity = pickle.load(open('model/similarity.pkl', 'rb'))
 
 movie_list = movies['title'].values
 selected_movie = st.selectbox(
@@ -35,21 +35,21 @@ selected_movie = st.selectbox(
 )
 
 if st.button('Show Recommendation'):
-    recommended_movie_names,recommended_movie_posters = recommend(selected_movie)
-    col1, col2, col3, col4, col5 = st.beta_columns(5)
-    with col1:
-        st.text(recommended_movie_names[0])
-        st.image(recommended_movie_posters[0])
-    with col2:
-        st.text(recommended_movie_names[1])
-        st.image(recommended_movie_posters[1])
+    recommended_movie_names, recommended_movie_posters = recommend(selected_movie)
+    
+    # Creating the HTML content to display movie posters and titles
+    movie_html = """
+    <div class="movie-container">
+    """
+    for i in range(5):
+        movie_html += f"""
+        <div class="movie">
+            <img src="{recommended_movie_posters[i]}" alt="{recommended_movie_names[i]}">
+            <div class="movie-title">{recommended_movie_names[i]}</div>
+        </div>
+        """
+    
+    movie_html += "</div>"
 
-    with col3:
-        st.text(recommended_movie_names[2])
-        st.image(recommended_movie_posters[2])
-    with col4:
-        st.text(recommended_movie_names[3])
-        st.image(recommended_movie_posters[3])
-    with col5:
-        st.text(recommended_movie_names[4])
-        st.image(recommended_movie_posters[4])
+    # Display HTML in Streamlit
+    st.markdown(movie_html, unsafe_allow_html=True)
